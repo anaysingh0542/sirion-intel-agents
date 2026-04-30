@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-ONE-TIME SETUP for kb-blog-curator.
+ONE-TIME SETUP for a Sirion CI managed agent.
 
-Run this once locally. It:
-  1. Uploads the six seed files via the Files API → persists file_ids
+Run this once locally per agent. It:
+  1. Uploads the seed files via the Files API → persists file_ids
   2. Creates a cloud environment → persists env_id
-  3. Creates the agent with the system prompt from kb-blog-curator.system.md → persists agent_id
+  3. Creates the agent with the specified system prompt → persists agent_id
   4. Writes everything to .env so run.py (and GitHub Actions) can read them back
 
 To UPDATE the agent later (tweak the system prompt, add a tool), run this script
@@ -13,8 +13,12 @@ with `--update`. It will call agents.update() on the existing agent_id, which
 bumps the version. Never re-create the agent — versioning is load-bearing.
 
 Usage:
-    python setup.py          # first-time setup
-    python setup.py --update # update existing agent with new system prompt
+    python setup.py                                    # setup blog curator (default)
+    python setup.py --agent youtube                    # setup youtube curator
+    python setup.py --agent release-notes              # setup release notes curator
+    python setup.py --agent podcast                    # setup podcast curator
+    python setup.py --agent pattern                    # setup pattern detector
+    python setup.py --update                           # update existing agent
 """
 
 from __future__ import annotations
@@ -32,23 +36,49 @@ from dotenv import dotenv_values, set_key
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 ENV_FILE = PROJECT_ROOT / ".env"
-SYSTEM_PROMPT_FILE = PROJECT_ROOT / "agents" / "kb-blog-curator.system.md"
 
-# The authoritative seed files live in the lowercase folder — topic_taxonomy.md
-# and url_sources.py only exist there, so use it as canonical.
-SEED_DIR = Path("<seed-dir>")
+SEED_DIR = PROJECT_ROOT / "seed-templates"
+
+AGENT_CONFIGS = {
+    "blog": {
+        "prompt_file": "kb-blog-curator.system.md",
+        "name": "sirion-blog-curator",
+        "description": "Monitors competitor blogs, newsrooms, and substacks for Sirion competitive intelligence.",
+        "env_key_prefix": "BLOG",
+    },
+    "youtube": {
+        "prompt_file": "kb-youtube-curator.system.md",
+        "name": "sirion-youtube-curator",
+        "description": "Monitors competitor YouTube channels for product demos, webinars, and conference talks.",
+        "env_key_prefix": "YOUTUBE",
+    },
+    "release-notes": {
+        "prompt_file": "kb-release-notes-curator.system.md",
+        "name": "sirion-release-notes-curator",
+        "description": "Monitors competitor release notes and changelogs for shipped capabilities.",
+        "env_key_prefix": "RELEASE_NOTES",
+    },
+    "podcast": {
+        "prompt_file": "kb-podcast-curator.system.md",
+        "name": "sirion-podcast-curator",
+        "description": "Monitors industry podcasts for competitor mentions and CLM market trends.",
+        "env_key_prefix": "PODCAST",
+    },
+    "pattern": {
+        "prompt_file": "kb-pattern-detector.system.md",
+        "name": "sirion-pattern-detector",
+        "description": "Weekly cross-signal pattern detection across all Sirion CI sources.",
+        "env_key_prefix": "PATTERN",
+    },
+}
 
 SEED_FILES = [
-    ("subscriptions.md",         "text/markdown"),   # PRIMARY — current newsletter subs, topic-tagged
-    ("interests_seed.md", "text/markdown"),
-    ("topic_taxonomy.md",        "text/markdown"),
-    ("url_sources.json",         "application/json"),
-    ("url_sources.md",           "text/markdown"),
-    ("claude_messages_clean.md", "text/markdown"),
-    ("url_sources.py",           "text/x-python"),
+    ("subscriptions.md",    "text/markdown"),
+    ("interests_seed.md",   "text/markdown"),
+    ("topic_taxonomy.md",   "text/markdown"),
+    ("url_sources.json",    "application/json"),
 ]
 
-# Canonical mount paths inside the session container.
 MOUNT_ROOT = "/workspace/seed"
 
 
@@ -92,11 +122,11 @@ def create_environment(client: anthropic.Anthropic) -> str:
     return env.id
 
 
-def create_agent(client: anthropic.Anthropic, system_prompt: str) -> tuple[str, str]:
+def create_agent(client: anthropic.Anthropic, system_prompt: str, name: str, description: str) -> tuple[str, str]:
     agent = client.beta.agents.create(
-        name="kb-blog-curator",
-        description="Scheduled curator for long-form blog and Substack content. Writes structured analyses to <your-username>/<your-kb-repo>.",
-        model="claude-opus-4-6",
+        name=name,
+        description=description,
+        model="claude-sonnet-4-6",
         system=system_prompt,
         tools=[
             {
@@ -140,45 +170,50 @@ def update_agent(client: anthropic.Anthropic, agent_id: str, system_prompt: str,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--agent", choices=list(AGENT_CONFIGS.keys()), default="blog",
+                        help="Which agent to set up (default: blog)")
     parser.add_argument("--update", action="store_true",
                         help="Update the existing agent with the current system prompt (bumps version)")
     args = parser.parse_args()
 
-    if not SYSTEM_PROMPT_FILE.exists():
-        raise SystemExit(f"System prompt not found: {SYSTEM_PROMPT_FILE}")
-    system_prompt = SYSTEM_PROMPT_FILE.read_text(encoding="utf-8")
+    config = AGENT_CONFIGS[args.agent]
+    prompt_file = PROJECT_ROOT / "agents" / config["prompt_file"]
+    prefix = config["env_key_prefix"]
+
+    if not prompt_file.exists():
+        raise SystemExit(f"System prompt not found: {prompt_file}")
+    system_prompt = prompt_file.read_text(encoding="utf-8")
 
     client = anthropic.Anthropic()
     env = load_env()
 
     if args.update:
-        agent_id = env.get("AGENT_ID")
-        current_version = env.get("AGENT_VERSION")
+        agent_id_key = f"{prefix}_AGENT_ID"
+        version_key = f"{prefix}_AGENT_VERSION"
+        agent_id = env.get(agent_id_key)
+        current_version = env.get(version_key)
         if not agent_id or not current_version:
-            raise SystemExit("AGENT_ID/AGENT_VERSION not in .env — run without --update first.")
+            raise SystemExit(f"{agent_id_key}/{version_key} not in .env — run without --update first.")
         print(f"Updating agent {agent_id} (from version {current_version})...")
         new_version = update_agent(client, agent_id, system_prompt, current_version)
-        save_env_key("AGENT_VERSION", new_version)
+        save_env_key(version_key, new_version)
         print(f"✓ Agent updated to version {new_version}")
-        print("\nDon't forget to update the AGENT_VERSION secret in GitHub Actions too.")
         return
 
-    # -------- Fresh setup --------
     print("=" * 60)
-    print("kb-blog-curator — one-time setup")
+    print(f"{config['name']} — one-time setup")
     print("=" * 60)
 
-    # 1. Seed files
+    # 1. Seed files (shared across all agents)
     if "SEED_FILE_IDS" not in env:
         print("\n[1/3] Uploading seed files...")
         file_ids = upload_seed_files(client)
         seed_file_ids_str = ",".join(f"{name}:{fid}" for name, fid in file_ids.items())
         save_env_key("SEED_FILE_IDS", seed_file_ids_str)
     else:
-        print("\n[1/3] Seed files already uploaded (SEED_FILE_IDS in .env). "
-              "Delete the line to re-upload.")
+        print("\n[1/3] Seed files already uploaded (SEED_FILE_IDS in .env).")
 
-    # 2. Environment
+    # 2. Environment (shared across all agents)
     if "ENV_ID" not in env:
         print("\n[2/3] Creating environment...")
         env_id = create_environment(client)
@@ -187,33 +222,29 @@ def main() -> None:
     else:
         print(f"\n[2/3] Environment already created: {env['ENV_ID']}")
 
-    # 3. Agent
-    if "AGENT_ID" not in env:
-        print("\n[3/3] Creating agent...")
-        agent_id, version = create_agent(client, system_prompt)
-        save_env_key("AGENT_ID", agent_id)
-        save_env_key("AGENT_VERSION", version)
+    # 3. Agent (per-agent)
+    agent_id_key = f"{prefix}_AGENT_ID"
+    version_key = f"{prefix}_AGENT_VERSION"
+    if agent_id_key not in env:
+        print(f"\n[3/3] Creating agent: {config['name']}...")
+        agent_id, version = create_agent(client, system_prompt, config["name"], config["description"])
+        save_env_key(agent_id_key, agent_id)
+        save_env_key(version_key, version)
         print(f"    → {agent_id} (version {version})")
     else:
-        print(f"\n[3/3] Agent already created: {env['AGENT_ID']}")
+        print(f"\n[3/3] Agent already created: {env[agent_id_key]}")
 
     print("\n" + "=" * 60)
     print("Setup complete. IDs saved to .env:")
     print("=" * 60)
     final_env = load_env()
-    for key in ("SEED_FILE_IDS", "ENV_ID", "AGENT_ID", "AGENT_VERSION"):
+    for key in ("SEED_FILE_IDS", "ENV_ID", agent_id_key, version_key):
         if key in final_env:
-            # Truncate long values for display
             val = final_env[key]
             display = val if len(val) < 80 else val[:77] + "..."
             print(f"  {key}={display}")
 
-    print("\nNext steps:")
-    print("  1. Copy .env values into GitHub Actions secrets on the KB repo:")
-    print("     ANTHROPIC_API_KEY, ENV_ID, AGENT_ID, AGENT_VERSION, SEED_FILE_IDS")
-    print("  2. Copy run.py to kb repo at scripts/run-blog-ingest.py")
-    print("  3. Copy blog-ingest.yml to kb repo at .github/workflows/blog-ingest.yml")
-    print("  4. Push the KB repo. First scheduled run will bootstrap kb/profile/")
+    print(f"\nTo set up the next agent, run: python setup.py --agent <name>")
 
 
 if __name__ == "__main__":

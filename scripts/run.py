@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RUNTIME script for kb-blog-curator.
+RUNTIME script for Sirion CI managed agents.
 
 Called every scheduled tick (by GitHub Actions cron, or manually).
 Creates a fresh session against the pre-existing agent and environment,
@@ -13,12 +13,13 @@ Reads all required IDs from environment variables:
     AGENT_VERSION      — agent version (for reproducibility)
     ENV_ID             — pre-created environment ID
     SEED_FILE_IDS      — comma-separated `filename:file_id` pairs
-    KB_REPO_URL        — e.g. https://github.com/<your-username>/<your-kb-repo>
+    KB_REPO_URL        — e.g. https://github.com/anaysingh0542/sirion-intel-kb
     KB_REPO_TOKEN      — GitHub PAT or GITHUB_TOKEN with contents:write
-    SLOT               — "morning" or "evening" (passed from the cron workflow)
+    SLOT               — "morning", "midday", or "evening" (from cron workflow)
+    AGENT_NAME         — human-readable name for logging (e.g. "blog-curator")
 
 Usage:
-    python run.py
+    AGENT_ID=$BLOG_AGENT_ID python run.py
 """
 
 from __future__ import annotations
@@ -35,11 +36,11 @@ import anthropic
 # --------------------------------------------------------------------------
 
 AGENT_ID      = os.environ["AGENT_ID"]
-AGENT_VERSION = os.environ.get("AGENT_VERSION")  # optional — pins reproducibility
+AGENT_VERSION = os.environ.get("AGENT_VERSION")
 ENV_ID        = os.environ["ENV_ID"]
-KB_REPO_URL   = os.environ["KB_REPO_URL"]
+KB_REPO_URL   = os.environ.get("KB_REPO_URL", "https://github.com/anaysingh0542/sirion-intel-kb")
+AGENT_NAME    = os.environ.get("AGENT_NAME", "sirion-ci-agent")
 
-# Token fallback chain: explicit KB_REPO_TOKEN → local dev GITHUB_PAT → GH Actions built-in
 KB_REPO_TOKEN = (
     os.environ.get("KB_REPO_TOKEN")
     or os.environ.get("GITHUB_PAT")
@@ -86,13 +87,12 @@ def kickoff_text() -> str:
     return (
         f"Run the full pipeline for the {SLOT} slot. "
         f"Current UTC time: {now}. "
-        "Follow your system prompt exactly: verify git push, load profile, "
-        "drain feedback, passive learning, discovery, rank+cap, analyze, "
-        "topics, synthesis, index, commit+push, stop.\n\n"
+        "Follow your system prompt exactly: verify git push, load seeds, "
+        "discover, dedupe, rank, analyze, synthesis, run log, commit+push, stop.\n\n"
         f"GIT_PUSH_PAT={KB_REPO_TOKEN}\n\n"
         "If git push returns 503, fix the remote URL to bypass the CMA proxy:\n"
         f"    git remote set-url origin https://x-access-token:{KB_REPO_TOKEN}"
-        f"@github.com/<your-username>/<your-kb-repo>.git\n"
+        f"@github.com/anaysingh0542/sirion-intel-kb.git\n"
         "Then retry the push."
     )
 
@@ -120,12 +120,12 @@ def main() -> int:
         agent_ref = AGENT_ID  # string shorthand → latest version
 
     print(f"[{datetime.now(timezone.utc).isoformat()}] creating session "
-          f"(slot={SLOT}, agent={AGENT_ID}, env={ENV_ID})...", flush=True)
+          f"(agent={AGENT_NAME}, slot={SLOT}, id={AGENT_ID}, env={ENV_ID})...", flush=True)
 
     session = client.beta.sessions.create(
         agent=agent_ref,
         environment_id=ENV_ID,
-        title=f"kb-blog-curator / {SLOT} / {datetime.now(timezone.utc).date()}",
+        title=f"{AGENT_NAME} / {SLOT} / {datetime.now(timezone.utc).date()}",
         resources=resources,
     )
     print(f"session {session.id} status={session.status}", flush=True)
