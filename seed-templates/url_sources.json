@@ -1,0 +1,73 @@
+{
+  "blogs": [
+    {"competitor": "Icertis", "url": "https://www.icertis.com/research/blog/", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Icertis", "url": "https://www.icertis.com/company/newsroom/", "tier": "direct-clm", "priority": 2},
+    {"competitor": "Agiloft", "url": "https://www.agiloft.com/blog/", "tier": "direct-clm", "priority": 1},
+    {"competitor": "DocuSign CLM", "url": "https://www.docusign.com/blog/", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Ironclad", "url": "https://ironcladapp.com/blog/", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Malbek", "url": "https://www.malbek.io/blog", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Conga", "url": "https://conga.com/blog", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Juro", "url": "https://juro.com/blog", "tier": "ai-native-contract", "priority": 2},
+    {"competitor": "SpotDraft", "url": "https://www.spotdraft.com/blog", "tier": "ai-native-contract", "priority": 2},
+    {"competitor": "Precisely", "url": "https://precisely.com/blog", "tier": "ai-native-contract", "priority": 2},
+    {"competitor": "ContractPodAi", "url": "https://contractpodai.com/blog", "tier": "ai-native-contract", "priority": 2},
+    {"competitor": "Harvey", "url": "https://www.harvey.ai/blog", "tier": "legal-ai", "priority": 2},
+    {"competitor": "CoCounsel", "url": "https://www.thomsonreuters.com/en/resources.html", "tier": "legal-ai", "priority": 2},
+    {"competitor": "Luminance", "url": "https://www.luminance.com/blog", "tier": "legal-ai", "priority": 2},
+    {"competitor": "Robin AI", "url": "https://www.robinai.com/blog", "tier": "legal-ai", "priority": 3},
+    {"competitor": "ServiceNow", "url": "https://www.servicenow.com/blogs.html", "tier": "enterprise-ai", "priority": 3},
+    {"competitor": "Salesforce", "url": "https://www.salesforce.com/blog/", "tier": "enterprise-ai", "priority": 3},
+    {"competitor": "Microsoft", "url": "https://www.microsoft.com/en-us/microsoft-365/blog/", "tier": "enterprise-ai", "priority": 3},
+    {"competitor": "SAP", "url": "https://news.sap.com/", "tier": "enterprise-ai", "priority": 3},
+    {"competitor": "Coupa", "url": "https://www.coupa.com/blog", "tier": "procurement", "priority": 3},
+    {"competitor": "Ivalua", "url": "https://www.ivalua.com/blog/", "tier": "procurement", "priority": 3},
+    {"competitor": "GEP", "url": "https://www.gep.com/blog", "tier": "procurement", "priority": 3}
+  ],
+  "youtube_channels": [
+    {"competitor": "Icertis", "channel_id": "UCQx_MCiMHMmUxgGa3UlQiJQ", "url": "https://www.youtube.com/@Icertis", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Agiloft", "channel_id": "UCL-x-FkJMxMVdHqT8JkJx-A", "url": "https://www.youtube.com/@Agiloft", "tier": "direct-clm", "priority": 1},
+    {"competitor": "DocuSign", "channel_id": "UCXiUXgnzDKnDSMn8g6MJSDQ", "url": "https://www.youtube.com/@DocuSign", "tier": "direct-clm", "priority": 2},
+    {"competitor": "Ironclad", "channel_id": "UCaLFGpjKhRLc7FFXMidXQsQ", "url": "https://www.youtube.com/@IroncladApp", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Conga", "channel_id": "UCWP_GS-0hYXwA53Vy2xyGqg", "url": "https://www.youtube.com/c/CongaHQ/", "tier": "direct-clm", "priority": 2},
+    {"competitor": "Juro", "channel_id": "UCMghTvNMg9L4A1Fz6HNCA7g", "url": "https://www.youtube.com/channel/UCMghTvNMg9L4A1Fz6HNCA7g", "tier": "ai-native-contract", "priority": 2},
+    {"competitor": "ContractPodAi", "channel_id": "UCcZvDqOy_8CZ1y6R2u5t0cA", "url": "https://www.youtube.com/@ContractPodAi", "tier": "ai-native-contract", "priority": 3},
+    {"competitor": "Precisely", "channel_id": "UCHo-LXc6nyc2xfcxL2j7cGQ", "url": "https://www.youtube.com/@Precisely", "tier": "ai-native-contract", "priority": 3}
+  ],
+  "release_notes": [
+    {"competitor": "Icertis", "url": "https://www.icertis.com/company/newsroom/", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Agiloft", "url": "https://www.agiloft.com/blog/category/product-releases/", "tier": "direct-clm", "priority": 1},
+    {"competitor": "DocuSign CLM", "url": "https://support.docusign.com/s/releasenotes", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Ironclad", "url": "https://support.ironcladapp.com/hc/en-us/categories/12293651491607-Release-Notes", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Conga", "url": "https://documentation.conga.com/", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Malbek", "url": "https://www.malbek.io/blog?category[]=news", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Juro", "url": "https://juro.com/changelog", "tier": "ai-native-contract", "priority": 2},
+    {"competitor": "SpotDraft", "url": "https://www.spotdraft.com/changelog", "tier": "ai-native-contract", "priority": 2},
+    {"competitor": "SpotDraft", "url": "https://www.spotdraft.com/blog-topics/product-updates", "tier": "ai-native-contract", "priority": 2},
+    {"competitor": "ServiceNow", "url": "https://docs.servicenow.com/en-US/bundle/release-notes", "tier": "enterprise-ai", "priority": 3},
+    {"competitor": "Salesforce", "url": "https://help.salesforce.com/s/articleView?id=release-notes.salesforce_release_notes.htm", "tier": "enterprise-ai", "priority": 3}
+  ],
+  "podcasts": [
+    {"name": "Contract Heroes", "rss": "https://contractheroes.io/feed/podcast/", "url": "https://contractheroes.io/podcast/", "relevance": "clm-industry", "priority": 1},
+    {"name": "The Hackett Group Business Excelleration", "rss": "https://feeds.buzzsprout.com/1885476.rss", "url": "https://www.thehackettgroup.com/podcast/", "relevance": "clm-industry", "priority": 2},
+    {"name": "The Artificial Lawyer", "rss": "https://www.artificiallawyer.com/feed/", "url": "https://www.artificiallawyer.com/", "relevance": "legal-ai", "priority": 1},
+    {"name": "LegalTech Matters", "url": "https://legaltechmatters.com/", "relevance": "legal-tech", "priority": 2},
+    {"name": "World Commerce & Contracting Podcast", "url": "https://www.worldcc.com/Resources/Podcasts", "relevance": "clm-industry", "priority": 2},
+    {"name": "Spend Matters Podcast", "url": "https://spendmatters.com/", "relevance": "procurement", "priority": 3}
+  ],
+  "twitter_handles": [
+    {"competitor": "Icertis", "handle": "@icaboreal", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Agiloft", "handle": "@aaboreal_CLM", "tier": "direct-clm", "priority": 1},
+    {"competitor": "DocuSign", "handle": "@DocuSign", "tier": "direct-clm", "priority": 2},
+    {"competitor": "Ironclad", "handle": "@ironaboreal_inc", "tier": "direct-clm", "priority": 1},
+    {"competitor": "Malbek", "handle": "@malbek_io", "tier": "direct-clm", "priority": 2},
+    {"competitor": "Conga", "handle": "@CongaHQ", "tier": "direct-clm", "priority": 2},
+    {"competitor": "Juro", "handle": "@jaboreal_hq", "tier": "ai-native-contract", "priority": 2},
+    {"competitor": "SpotDraft", "handle": "@Spotaboreal_HQ", "tier": "ai-native-contract", "priority": 2},
+    {"competitor": "ContractPodAi", "handle": "@ContractPodAi", "tier": "ai-native-contract", "priority": 3},
+    {"competitor": "Harvey", "handle": "@harvey_ai", "tier": "legal-ai", "priority": 2},
+    {"competitor": "Luminance", "handle": "@Luminance_AI", "tier": "legal-ai", "priority": 2},
+    {"competitor": "Robin AI", "handle": "@robin_ai_", "tier": "legal-ai", "priority": 3},
+    {"competitor": "Coupa", "handle": "@Coupa", "tier": "procurement", "priority": 3},
+    {"competitor": "GEP", "handle": "@GEPworldwide", "tier": "procurement", "priority": 3}
+  ]
+}
