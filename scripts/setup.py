@@ -28,7 +28,8 @@ import os
 from pathlib import Path
 
 import anthropic
-from dotenv import dotenv_values, set_key
+import httpx
+from dotenv import dotenv_values, load_dotenv, set_key
 
 # --------------------------------------------------------------------------
 # Paths
@@ -80,6 +81,9 @@ SEED_FILES = [
 ]
 
 MOUNT_ROOT = "/workspace/seed"
+MANAGED_AGENTS_BETA_HEADER = "managed-agents-2026-04-01"
+ANTHROPIC_VERSION_HEADER = "2023-06-01"
+ANTHROPIC_API_BASE = "https://api.anthropic.com"
 
 
 # --------------------------------------------------------------------------
@@ -94,6 +98,30 @@ def load_env() -> dict[str, str]:
 
 def save_env_key(key: str, value: str) -> None:
     set_key(str(ENV_FILE), key, value, quote_mode="never")
+
+
+def _managed_agents_request(method: str, path: str, payload: dict) -> dict:
+    """Direct API fallback for managed agents endpoints unavailable in older SDKs."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise SystemExit("ANTHROPIC_API_KEY is required.")
+
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": ANTHROPIC_VERSION_HEADER,
+        "anthropic-beta": MANAGED_AGENTS_BETA_HEADER,
+    }
+    url = f"{ANTHROPIC_API_BASE}{path}"
+    with httpx.Client(timeout=90) as http:
+        response = http.request(method=method, url=url, headers=headers, json=payload)
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise RuntimeError(
+            f"Managed Agents API call failed ({method} {path}): "
+            f"{exc.response.status_code} {exc.response.text}"
+        ) from exc
+    return response.json()
 
 
 def upload_seed_files(client: anthropic.Anthropic) -> dict[str, str]:
@@ -112,23 +140,27 @@ def upload_seed_files(client: anthropic.Anthropic) -> dict[str, str]:
 
 
 def create_environment(client: anthropic.Anthropic) -> str:
-    env = client.beta.environments.create(
-        name="kb-blog-curator-env",
-        config={
+    payload = {
+        "name": "kb-blog-curator-env",
+        "config": {
             "type": "cloud",
             "networking": {"type": "unrestricted"},
         },
-    )
-    return env.id
+    }
+    if hasattr(client.beta, "environments"):
+        env = client.beta.environments.create(**payload)
+        return env.id
+    env = _managed_agents_request("POST", "/v1/environments", payload)
+    return env["id"]
 
 
 def create_agent(client: anthropic.Anthropic, system_prompt: str, name: str, description: str) -> tuple[str, str]:
-    agent = client.beta.agents.create(
-        name=name,
-        description=description,
-        model="claude-sonnet-4-6",
-        system=system_prompt,
-        tools=[
+    payload = {
+        "name": name,
+        "description": description,
+        "model": "claude-sonnet-4-6",
+        "system": system_prompt,
+        "tools": [
             {
                 "type": "agent_toolset_20260401",
                 "default_config": {
@@ -137,8 +169,12 @@ def create_agent(client: anthropic.Anthropic, system_prompt: str, name: str, des
                 },
             }
         ],
-    )
-    return agent.id, str(agent.version)
+    }
+    if hasattr(client.beta, "agents"):
+        agent = client.beta.agents.create(**payload)
+        return agent.id, str(agent.version)
+    agent = _managed_agents_request("POST", "/v1/agents", payload)
+    return agent["id"], str(agent["version"])
 
 
 def update_agent(client: anthropic.Anthropic, agent_id: str, system_prompt: str, current_version: str) -> str:
@@ -147,11 +183,10 @@ def update_agent(client: anthropic.Anthropic, agent_id: str, system_prompt: str,
     `current_version` is the version we're updating FROM — required by the API
     as an optimistic-concurrency check.
     """
-    updated = client.beta.agents.update(
-        agent_id,
-        version=int(current_version),
-        system=system_prompt,
-        tools=[
+    payload = {
+        "version": int(current_version),
+        "system": system_prompt,
+        "tools": [
             {
                 "type": "agent_toolset_20260401",
                 "default_config": {
@@ -160,8 +195,12 @@ def update_agent(client: anthropic.Anthropic, agent_id: str, system_prompt: str,
                 },
             }
         ],
-    )
-    return str(updated.version)
+    }
+    if hasattr(client.beta, "agents"):
+        updated = client.beta.agents.update(agent_id, **payload)
+        return str(updated.version)
+    updated = _managed_agents_request("PATCH", f"/v1/agents/{agent_id}", payload)
+    return str(updated["version"])
 
 
 # --------------------------------------------------------------------------
@@ -179,6 +218,10 @@ def main() -> None:
     config = AGENT_CONFIGS[args.agent]
     prompt_file = PROJECT_ROOT / "agents" / config["prompt_file"]
     prefix = config["env_key_prefix"]
+
+    # Support local repo .env and workspace-root .env without requiring manual export.
+    load_dotenv(dotenv_path=PROJECT_ROOT.parent / ".env", override=False)
+    load_dotenv(dotenv_path=ENV_FILE, override=False)
 
     if not prompt_file.exists():
         raise SystemExit(f"System prompt not found: {prompt_file}")
